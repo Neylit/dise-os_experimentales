@@ -1,0 +1,76 @@
+---
+title: "Analisis de datos"
+author: "Neylit Yrigoin-Cubas"
+format: html
+---
+
+#Diseño experimental
+
+$$hi= \mu + bloque + riego + genotipo + riego \times genotipo + e$$ 
+
+#Cargar los paquetes
+
+```{r}
+library(tidyverse)
+library(googlesheets4)
+library(emmeans)
+```
+
+#Importar datos 
+
+```{r}
+
+url <-"https://docs.google.com/spreadsheets/d/15r7ZwcZZHbEgltlF6gSFvCTFA-CFzVBWwg3mFlRyKPs/edit?gid=1263018298#gid=1263018298"
+
+gs <- url %>% 
+  as_sheets_id()
+
+fb <- gs %>%
+  range_read("fb") %>%
+  mutate(
+    riego = as.factor(riego),
+    geno = as.factor(geno),
+    block = as.factor(block),
+    bloque = as.factor(bloque)
+  )
+
+str(fb)
+
+fb <- gs %>%
+  range_read("fb") %>%
+  mutate(across(1:bloque, ~as.factor(.))
+         
+str(fb)
+```
+
+#ANNOVA
+
+$$hi = \mu + bloque + riego + genotipo + riego \times genotipo + e$$ 
+
+```{r}
+md <- aov(hi ~ bloque + riego*geno, fb)
+anova(md)
+```
+```
+
+
+```{r}
+md <- aov(hi ~ bloque + riego*geno, fb)
+anova(md)
+```
+
+
+```{r}
+```
+# Comparación de medias 
+```{r}
+# 🔹 Cargar paquetes necesarios
+library(tidyverse)
+library(googlesheets4)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(ggplot2)
+
+
+

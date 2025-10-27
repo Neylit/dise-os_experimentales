@@ -1,0 +1,180 @@
+---
+title: "DISEÑO II UNIDAD"
+author: "Neylit Yrigoin-Cubas"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+#Base de datos
+
+#Importar base de datos
+
+
+```{r}
+library(googlesheets4)
+library(tidyverse)
+
+url <-"https://docs.google.com/spreadsheets/d/1pjM8GMqfhJo9nVudwB1-m-Yz4_wFgYMz_o8wpjlM0f8/edit?gid=814885860#gid=814885860"
+
+gs <- url %>% as_sheets_id()
+
+fb <- gs %>%
+  range_read("fb") %>%
+  mutate(
+    trt = as.factor(trt),
+    bloque = as.factor(bloque)
+  )
+
+str(fb)
+```
+
+# ANOVA
+
+$$hi = \mu + trt + bloque + e$$ 
+
+```{r}
+md <- aov(nmg ~ bloque + trt,data = fb)
+anova(md)
+```
+# COMPARACIÓN DE MEDIAS 
+
+```{r}
+library(emmeans)
+library(multcomp)
+library(multcompView)
+
+emm_int <- emmeans(md, ~ trt )
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha = 0.05
+) %>%
+  as_tibble() %>%
+  mutate(
+    .group = stringr::str_trim(.group)   # limpia espacios en las letras
+  )
+library(knitr)
+cld_trt %>% kable()
+```
+
+#GRÁFICO
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# 📊 Calcular media general
+media_general <- mean(cld_int$emmean, na.rm = TRUE)
+
+# 🎨 Crear gráfico tipo "cuadrados con error" y letras Tukey
+ggplot(cld_int, aes(x = trt, y = emmean, fill = .group)) +
+  geom_point(shape = 22, size = 5, color = "black") +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+                width = 0.15, color = "black") +
+  geom_hline(yintercept = media_general, linetype = "solid", color = "gray40") +
+  geom_text(aes(label = sprintf("%.2f", emmean)),
+            vjust = -1.2, size = 3.8, color = "black") +
+  labs(
+    x = "Tratamiento",
+    y = "Número de macollos (media ± IC95%)",
+    title = "Comparación de medias ajustadas por tratamiento (Tukey)"
+  ) +
+  scale_fill_manual(values = c("a" = "gold", "b" = "gray60", "c" = "red")) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    legend.position = "none",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    axis.text.x = element_text(face = "bold")
+  ) +
+  coord_cartesian(ylim = c(min(cld_int$lower.CL) - 0.2, max(cld_int$upper.CL) + 0.3))
+
+```
+
+
+```{r}
+md <- aov(npg ~ bloque + trt,data = fb)
+anova(md)
+```
+
+
+```{r}
+library(emmeans)
+library(multcomp)
+library(multcompView)
+
+emm_int <- emmeans(md, ~ trt )
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha = 0.05
+) %>%
+  as_tibble() %>%
+  mutate(
+    .group = stringr::str_trim(.group)   # limpia espacios en las letras
+  )
+library(knitr)
+cld_int %>% kable()
+```
+
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# 📊 Calcular media general
+media_general <- mean(cld_int$emmean, na.rm = TRUE)
+
+# 🎨 Crear gráfico tipo "cuadrados con error" y letras Tukey
+ggplot(cld_int, aes(x = trt, y = emmean, fill = .group)) +
+  # Cuadrados rellenos
+  geom_point(
+    shape = 22,      # cuadrado
+    size = 5,
+    color = "black"
+  ) +
+  # Barras de error
+  geom_errorbar(
+    aes(ymin = lower.CL, ymax = upper.CL),
+    width = 0.15,
+    color = "black"
+  ) +
+  # Línea horizontal del promedio general
+  geom_hline(yintercept = media_general, linetype = "solid", color = "gray40") +
+  # Texto de las medias sobre cada punto
+  geom_text(
+    aes(label = sprintf("%.2f", emmean)),
+    vjust = -1.2,
+    size = 3.8,
+    color = "black"
+  ) +
+  # Etiquetas y título
+  labs(
+    x = "Tratamiento",
+    y = "NPG (media marginal ± IC95%)",
+    title = "Comparación de medias ajustadas de tratamientos para NPG (Tukey)"
+  ) +
+  # Colores personalizados (puedes ajustar según tus letras Tukey)
+  scale_fill_manual(values = c("a" = "gold", "b" = "gray60", "c" = "red")) +
+  # Tema limpio
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    legend.position = "none",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    axis.text.x = element_text(face = "bold")
+  ) +
+  # Ajuste de límites del eje Y
+  coord_cartesian(ylim = c(min(cld_int$lower.CL) - 0.3, max(cld_int$upper.CL) + 0.5))
+
+
+```
+```
+

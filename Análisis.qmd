@@ -1,0 +1,112 @@
+---
+title: "Analisis de datos"
+author: "Neylit Yrigoin-Cubas"
+format: html
+---
+
+#Diseño de experimentos
+
+## Pasos para diseñar y analizar un experimento 
+
+1.Diseñar el experimento (Determinar el modelo)
+2. Colectar los datos 
+3. Revisar la estructura de los datos
+4. Análisis de varianza
+5. Comparación de medias
+6. Gráfico
+
+#Base de datos 
+
+>https://docs.google.com/spreadsheets/d/15r7ZwcZZHbEgltlF6gSFvCTFA-CFzVBWwg3mFlRyKPs/edit?gid=1263018298#gid=1263018298
+
+#Importar base de datos
+```{r}
+library(googlesheets4)
+library(tidyverse)
+
+url <-"https://docs.google.com/spreadsheets/d/15r7ZwcZZHbEgltlF6gSFvCTFA-CFzVBWwg3mFlRyKPs/edit?gid=1263018298#gid=1263018298"
+
+gs <- url %>% as_sheets_id()
+
+fb <- gs %>% range_read("fb")
+
+str(fb)
+
+```
+
+> las variables riego, geno, block y bloque deen ser variables 
+
+```{r}
+fb <- gs %>% range_read("fb") %>% 
+  mutate(across(1:bloque, ~ as.factor(.)))
+
+str(fb)
+```
+
+# ANOVA
+
+$$hi = \mu + bloque + riego + genotipo + riego \times genotipo + e$$ 
+
+```{r}
+md <- aov(hi ~ bloque + riego*geno, fb)
+anova(md)
+```
+#Comparación de media 
+```{r}
+# Cargar el paquete emmeans
+library(emmeans)
+# Obtener las medias ajustadas para geno dentro de cada nivel de riego
+emm <- emmeans(md, ~ geno | riego)
+
+# Mostrar las medias estimadas
+emm
+
+# Comparación de medias entre genotipos dentro de cada riego (ajuste Tukey)
+pairs(emm, adjust = "tukey")
+
+# Si se desea un agrupamiento de letras (por ejemplo, LSD)
+library(multcomp)
+
+cld(emm, adjust = "tukey"
+    , Letters = letters, reversed = T)
+l
+```
+
+
+#Análisis HI
+```{r}
+# Paquetes necesarios
+library(emmeans)
+library(ggplot2)
+library(dplyr)
+
+# Modelo de análisis de varianza
+md <- aov(hi ~ bloque + riego*geno, data = fb)
+
+# Cálculo de medias ajustadas para geno dentro de cada nivel de riego
+emm <- emmeans(md, ~ geno | riego)
+
+# Conversión a data frame
+emm_df <- as.data.frame(emm)
+
+# Visualización previa de la tabla
+print(emm_df)
+
+# Gráfico de barras de medias ajustadas
+ggplot(emm_df, aes(x = geno, y = emmean, fill = riego)) +
+  geom_col(position = position_dodge(width = 0.9), color = "black") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE),
+                position = position_dodge(width = 0.9), width = 0.2) +
+  labs(
+    x = "Genotipo",
+    y = "Media ajustada de índice de cosecha (hi)",
+    fill = "Riego",
+    title = "Comparación de medias ajustadas de genotipos por régimen de riego"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top",
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  )
+```

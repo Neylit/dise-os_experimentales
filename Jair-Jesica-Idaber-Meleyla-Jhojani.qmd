@@ -1,0 +1,338 @@
+---
+title: "Análisis de datos"
+author: "Jair-Jesica-Idaber-Meleyla-Jhojani"
+format: html
+editor_options:
+  chunk_output_type: console
+---
+# Diseño experimental
+
+$$\text{npg} = \mu + \text{bloque} + \text{trt} + e$$
+
+# Cargar paquetes
+```{r}
+library(tidyverse)
+library(googlesheets4)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(knitr)
+```
+
+
+#Base de datos
+
+>https://docs.google.com/spreadsheets/d/1pjM8GMqfhJo9nVudwB1-m-Yz4_wFgYMz_o8wpjlM0f8/edit?gid=814885860#gid=814885860
+
+# Importar datos
+```{r}
+# Si tu hoja es pública, descomenta la siguiente línea:
+# gs4_deauth()
+
+url <- "https://docs.google.com/spreadsheets/d/1pjM8GMqfhJo9nVudwB1-m-Yz4_wFgYMz_o8wpjlM0f8/edit?gid=814885860#gid=814885860"
+gs  <- as_sheets_id(url)
+
+fb <- range_read(gs, "fb") |>
+  mutate(across(c(trt, bloque), as.factor))
+
+str(fb)
+```
+
+# Análisis para NPG
+
+# ANOVA (BCA)
+```{r}
+md <- aov(npg ~ bloque + trt, data = fb)
+anova(md)
+```
+
+# Comparación de medias (Tukey) con letras
+```{r}
+emm_int <- emmeans(md, ~ trt)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha   = 0.05
+) |>
+  as_tibble() |>
+  mutate(`.group` = stringr::str_trim(`.group`)) # limpia espacios
+
+kable(cld_int, caption = "NPG — Emmeans ± letras de Tukey (α = 0.05)")
+```
+
+# Utilidades para resumen por bloque e IC95%
+```{r}
+summarize_bca_ci95 <- function(df, resp){
+  df |>
+    group_by(trt, bloque) |>
+    summarise(val = mean(.data[[resp]], na.rm = TRUE), .groups = "drop") |>
+    group_by(trt) |>
+    summarise(
+      mean  = mean(val, na.rm = TRUE),
+      sd    = sd(val,  na.rm = TRUE),
+      n     = sum(!is.na(val)),
+      half  = ifelse(n > 1, qt(0.975, df = n-1) * sd / sqrt(n), NA_real_),
+      lower = mean - half,
+      upper = mean + half,
+      .groups = "drop"
+    )
+}
+
+plot_tesis_npg <- function(sdat, ylab = "Número de panoja", title = "NPG (media ± IC95%)"){
+  # Orden T1..T10 si aplica; si no, respeta niveles existentes
+  trt_chr <- as.character(sdat$trt)
+  if (all(grepl("^T[0-9]+$", trt_chr))) {
+    ord_num <- as.integer(gsub("[^0-9]+", "", trt_chr))
+    ord <- order(ord_num)
+    sdat <- sdat[ord, , drop = FALSE]
+    sdat <- sdat |>
+      mutate(trt = factor(trt, levels = unique(trt)))
+  } else {
+    sdat <- sdat |>
+      mutate(trt = factor(trt))
+  }
+
+  overall <- mean(sdat$mean, na.rm = TRUE)
+  idx <- which.min(abs(sdat$mean - overall))
+
+  cols <- ifelse(sdat$mean > overall, "#e6b800", "#7f7f7f")
+  cols[idx] <- "#d62728"  # rojo para el más cercano a la media global
+
+  rng <- max(sdat$upper - sdat$mean, na.rm = TRUE)
+
+  ggplot(sdat, aes(x = trt, y = mean)) +
+    geom_linerange(aes(ymin = lower, ymax = upper), color = "black") +
+    geom_point(shape = 15, size = 3.8, color = "black") +          # borde
+    geom_point(shape = 15, size = 3.3, color = cols) +              # relleno
+    geom_hline(yintercept = overall, color = "grey40") +
+    geom_text(aes(label = sprintf("%.2f", mean),
+                  y = mean + 0.12 * rng),
+              size = 3.2, vjust = 0) +
+    labs(x = "Tratamiento", y = ylab, title = title) +
+    theme_minimal(base_size = 12) +
+    theme(plot.title = element_text(face = "bold"))
+}
+```
+
+# Tabla y gráfico final
+```{r} 
+s_npg <- summarize_bca_ci95(fb, "npg")
+
+# Tabla con letras de Tukey (opcional)
+s_npg_tab <- s_npg |>
+  left_join(cld_int |>
+              dplyr::select(trt, `.group`),  # <- totalmente calificado y el nombre con backticks
+            by = "trt") |>
+  mutate(across(c(mean, lower, upper), ~ round(., 2)))
+
+kable(s_npg_tab |>
+        arrange(trt),
+      caption = "NPG — Medias por tratamiento (BCA) ± IC95% + letras de Tukey")
+
+# Gráfico estilo tesis
+plot_tesis_npg(s_npg,
+               ylab  = "Número de panoja",
+               title = "Prueba de Tukey (α=0.05) para número de panoja por golpe")
+```
+
+
+# Análisis para TP
+
+# ANOVA (BCA)
+```{r}
+md <- aov(tp ~ bloque + trt, data = fb)
+anova(md)
+```
+
+# Comparación de medias (Tukey) con letras
+```{r}
+emm_int <- emmeans(md, ~ trt)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha   = 0.05
+) |>
+  as_tibble() |>
+  mutate(`.group` = stringr::str_trim(`.group`)) # limpia espacios
+
+kable(cld_int, caption = "TP — Emmeans ± letras de Tukey (α = 0.05)")
+```
+
+# Utilidades para resumen por bloque e IC95%
+```{r}
+summarize_bca_ci95 <- function(df, resp){
+  df |>
+    group_by(trt, bloque) |>
+    summarise(val = mean(.data[[resp]], na.rm = TRUE), .groups = "drop") |>
+    group_by(trt) |>
+    summarise(
+      mean  = mean(val, na.rm = TRUE),
+      sd    = sd(val,  na.rm = TRUE),
+      n     = sum(!is.na(val)),
+      half  = ifelse(n > 1, qt(0.975, df = n-1) * sd / sqrt(n), NA_real_),
+      lower = mean - half,
+      upper = mean + half,
+      .groups = "drop"
+    )
+}
+
+plot_tesis_af <- function(sdat, ylab = "Tamaño de Panoja", title = "TP"){
+  # Orden T1..T10 si aplica; si no, respeta niveles existentes
+  trt_chr <- as.character(sdat$trt)
+  if (all(grepl("^T[0-9]+$", trt_chr))) {
+    ord_num <- as.integer(gsub("[^0-9]+", "", trt_chr))
+    ord <- order(ord_num)
+    sdat <- sdat[ord, , drop = FALSE]
+    sdat <- sdat |>
+      mutate(trt = factor(trt, levels = unique(trt)))
+  } else {
+    sdat <- sdat |>
+      mutate(trt = factor(trt))
+  }
+
+  overall <- mean(sdat$mean, na.rm = TRUE)
+  idx <- which.min(abs(sdat$mean - overall))
+
+  cols <- ifelse(sdat$mean > overall, "#e6b800", "#7f7f7f")
+  cols[idx] <- "#d62728"  # rojo para el más cercano a la media global
+
+  rng <- max(sdat$upper - sdat$mean, na.rm = TRUE)
+
+  ggplot(sdat, aes(x = trt, y = mean)) +
+    geom_linerange(aes(ymin = lower, ymax = upper), color = "black") +
+    geom_point(shape = 15, size = 3.8, color = "black") +          # borde
+    geom_point(shape = 15, size = 3.3, color = cols) +              # relleno
+    geom_hline(yintercept = overall, color = "grey40") +
+    geom_text(aes(label = sprintf("%.2f", mean),
+                  y = mean + 0.12 * rng),
+              size = 3.2, vjust = 0) +
+    labs(x = "Tratamiento", y = ylab, title = title) +
+    theme_minimal(base_size = 12) +
+    theme(plot.title = element_text(face = "bold"))
+}
+```
+
+# Tabla y gráfico final
+```{r} 
+s_tp <- summarize_bca_ci95(fb, "tp")
+
+# Tabla con letras de Tukey (opcional)
+s_tp_tab <- s_tp |>
+  left_join(cld_int |>
+              dplyr::select(trt, `.group`),  # <- totalmente calificado y el nombre con backticks
+            by = "trt") |>
+  mutate(across(c(mean, lower, upper), ~ round(., 2)))
+
+kable(s_tp_tab |>
+        arrange(trt),
+      caption = "TP — Medias por tratamiento (BCA) ± IC95% + letras de Tukey")
+
+# Gráfico estilo tesis
+plot_tesis_npg(s_tp,
+               ylab  = "Tamaño de panoja (cm)",
+               title = "Prueba de Tukey (α=0.05) para tamaño de panoja")
+```
+
+# Análisis para NMG
+
+# ANOVA (BCA)
+```{r}
+md <- aov(nmg ~ bloque + trt, data = fb)
+anova(md)
+```
+
+# Comparación de medias (Tukey) con letras
+```{r}
+emm_int <- emmeans(md, ~ trt)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha   = 0.05
+) |>
+  as_tibble() |>
+  mutate(`.group` = stringr::str_trim(`.group`)) # limpia espacios
+
+kable(cld_int, caption = "nmg — Emmeans ± letras de Tukey (α = 0.05)")
+```
+
+# Utilidades para resumen por bloque e IC95%
+```{r}
+summarize_bca_ci95 <- function(df, resp){
+  df |>
+    group_by(trt, bloque) |>
+    summarise(val = mean(.data[[resp]], na.rm = TRUE), .groups = "drop") |>
+    group_by(trt) |>
+    summarise(
+      mean  = mean(val, na.rm = TRUE),
+      sd    = sd(val,  na.rm = TRUE),
+      n     = sum(!is.na(val)),
+      half  = ifelse(n > 1, qt(0.975, df = n-1) * sd / sqrt(n), NA_real_),
+      lower = mean - half,
+      upper = mean + half,
+      .groups = "drop"
+    )
+}
+
+plot_tesis_af <- function(sdat, ylab = "Tamaño de Panoja", title = "NMG"){
+  # Orden T1..T10 si aplica; si no, respeta niveles existentes
+  trt_chr <- as.character(sdat$trt)
+  if (all(grepl("^T[0-9]+$", trt_chr))) {
+    ord_num <- as.integer(gsub("[^0-9]+", "", trt_chr))
+    ord <- order(ord_num)
+    sdat <- sdat[ord, , drop = FALSE]
+    sdat <- sdat |>
+      mutate(trt = factor(trt, levels = unique(trt)))
+  } else {
+    sdat <- sdat |>
+      mutate(trt = factor(trt))
+  }
+
+  overall <- mean(sdat$mean, na.rm = TRUE)
+  idx <- which.min(abs(sdat$mean - overall))
+
+  cols <- ifelse(sdat$mean > overall, "#e6b800", "#7f7f7f")
+  cols[idx] <- "#d62728"  # rojo para el más cercano a la media global
+
+  rng <- max(sdat$upper - sdat$mean, na.rm = TRUE)
+
+  ggplot(sdat, aes(x = trt, y = mean)) +
+    geom_linerange(aes(ymin = lower, ymax = upper), color = "black") +
+    geom_point(shape = 15, size = 3.8, color = "black") +          # borde
+    geom_point(shape = 15, size = 3.3, color = cols) +              # relleno
+    geom_hline(yintercept = overall, color = "grey40") +
+    geom_text(aes(label = sprintf("%.2f", mean),
+                  y = mean + 0.12 * rng),
+              size = 3.2, vjust = 0) +
+    labs(x = "Tratamiento", y = ylab, title = title) +
+    theme_minimal(base_size = 12) +
+    theme(plot.title = element_text(face = "bold"))
+}
+```
+# Tabla y gráfico final
+```{r} 
+s_nmg <- summarize_bca_ci95(fb, "nmg")
+
+# Tabla con letras de Tukey (opcional)
+s_nmg_tab <- s_nmg |>
+  left_join(cld_int |>
+              dplyr::select(trt, `.group`),  # <- totalmente calificado y el nombre con backticks
+            by = "trt") |>
+  mutate(across(c(mean, lower, upper), ~ round(., 2)))
+
+kable(s_nmg_tab |>
+        arrange(trt),
+      caption = "TP — Medias por tratamiento (BCA) ± IC95% + letras de Tukey")
+
+# Gráfico estilo tesis
+plot_tesis_npg(s_nmg,
+               ylab  = "Número de macollos",
+               title = "Prueba de Tukey (α=0.05) para número de macollos por golpe")
+```
+
+
