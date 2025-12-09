@@ -20,10 +20,7 @@ gs <- url %>% as_sheets_id()
 
 fb <- gs %>%
   range_read("fb") %>%
-  mutate(
-    trt = as.factor(trt),
-    bloque = as.factor(bloque)
-  )
+  mutate(across(1:bloque, ~as factor(.))
 
 str(fb)
 ```

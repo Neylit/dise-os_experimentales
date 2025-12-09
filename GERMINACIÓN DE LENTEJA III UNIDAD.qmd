@@ -1,0 +1,222 @@
+---
+title: "Germinación de semillas de lentejas"
+author: "Chasquibol Mas Katerin- Tuesta Melendez, Lleily Consuelo- Yrigoin Cubas Neylit Jhojani"
+format: html
+editor_options:
+  chunk_output_type: console
+---
+
+
+## Diseño experimental
+
+$$\Y_{ij} = \mu + \tau_i + \beta_j + e_ij$$
+
+# Cargar paquetes
+```{r}
+library(tidyverse)
+library(googlesheets4)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(knitr)
+```
+
+
+#Base de datos
+>https://docs.google.com/spreadsheets/d/1_5Ue3HsDQekTM2Whni85ToqJvLOUefV1tcV1Xlso5CU/edit?gid=0#gid=0
+
+# Importar datos
+```{r}
+# Si tu hoja es pública, descomenta la siguiente línea:
+# gs4_deauth()
+
+url <- "https://docs.google.com/spreadsheets/d/1_5Ue3HsDQekTM2Whni85ToqJvLOUefV1tcV1Xlso5CU/edit?gid=0#gid=0"
+
+gs  <- as_sheets_id(url)
+
+fb <- range_read(gs, "fb") |>
+  mutate(across(c(trt, bloque), as.factor))
+
+str(fb)
+```
+
+
+# Análisis para longr_3
+
+# ANOVA (DBCA)
+```{r}
+md <- aov(longr_3 ~ trt * sustrato, data = fb)
+summary(md)
+```
+
+# Comparación de medias (Tukey) con letras
+```{r}
+emm_int <- emmeans(md, ~ trt)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha   = 0.05
+) |>
+  as_tibble() |>
+  mutate(`.group` = stringr::str_trim(`.group`)) # limpia espacios
+
+kable(cld_int, caption = "longr_3 — Emmeans ± letras de Tukey (α = 0.05)")
+```
+
+# Tabla y gráfico final
+```{r}
+ggplot(cld_int,
+       aes(x = trt, y = emmean, fill = trt)) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+                width = 0.2,
+                position = position_dodge(width = 0.9)) +
+  geom_text(aes(label = .group),
+            vjust = -0.7,
+            size  = 5) +
+  labs(
+    x = "Tratamientos (trt)",
+    y = "Media de longr_3",
+    fill  = "Tratamiento",
+    title = "Media de longitud de la raíz por tratamiento"
+  ) +
+  theme_minimal() +
+  theme(text = element_text(size = 14))
+```
+
+# Análisis para longr_6
+
+# ANOVA (DBCA)
+```{r}
+md <- aov(longr_6 ~ trt * sustrato, data = fb)
+summary(md)
+```
+
+# Comparación de medias (Tukey) con letras
+```{r}
+emm_int <- emmeans(md, ~ trt)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha   = 0.05
+) |>
+  as_tibble() |>
+  mutate(`.group` = stringr::str_trim(`.group`)) # limpia espacios
+
+
+kable(cld_int, caption = "longr_6 — Emmeans ± letras de Tukey (α = 0.05)")
+```
+
+# Tabla y gráfico final
+```{r}
+ggplot(cld_int,
+       aes(x = trt, y = emmean, fill = trt)) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+                width = 0.2,
+                position = position_dodge(width = 0.9)) +
+  geom_text(aes(label = .group),
+            vjust = -0.7,
+            size  = 5) +
+  labs(
+    x = "Tratamientos (trt)",
+    y = "Media de longr_6",
+    fill  = "Tratamiento",
+    title = "Media de longitud de la raíz por tratamiento"
+  ) +
+  theme_minimal() +
+  theme(text = element_text(size = 14))
+```
+# Análisis para longt_6
+
+# ANOVA (DBCA)
+```{r}
+md <- aov(longt_6 ~ trt * sustrato, data = fb)
+summary(md)
+```
+
+# Comparación de medias (Tukey) con letras
+```{r}
+emm_int <- emmeans(md, ~ trt)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha   = 0.05
+) |>
+  as_tibble() |>
+  mutate(`.group` = stringr::str_trim(`.group`)) # limpia espacios
+
+kable(cld_int, caption = "longt_6 — Emmeans ± letras de Tukey (α = 0.05)")
+```
+
+# Tabla y gráfico final
+```{r}
+ggplot(cld_int,
+       aes(x = trt, y = emmean, fill = trt)) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+                width = 0.2,
+                position = position_dodge(width = 0.9)) +
+  geom_text(aes(label = .group),
+            vjust = -0.7,
+            size  = 5) +
+  labs(
+    x = "Tratamientos (trt)",
+    y = "Media de longt_6",
+    fill  = "Tratamiento",
+    title = "Media de longitud del tallo por tratamiento"
+  ) +
+  theme_minimal() +
+  theme(text = element_text(size = 14))
+```
+# Análisis para longt_10
+
+# ANOVA (DBCA)
+```{r}
+md <- aov(longt_10 ~ trt * sustrato, data = fb)
+summary(md)
+```
+
+# Comparación de medias (Tukey) con letras
+```{r}
+emm_int <- emmeans(md, ~ trt)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha   = 0.05
+) |>
+  as_tibble() |>
+  mutate(`.group` = stringr::str_trim(`.group`)) # limpia espacios
+
+kable(cld_int, caption = "longt_10 — Emmeans ± letras de Tukey (α = 0.05)")
+```
+
+# Tabla y gráfico final
+```{r}
+ggplot(cld_int,
+       aes(x = trt, y = emmean, fill = trt)) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+                width = 0.2,
+                position = position_dodge(width = 0.9)) +
+  geom_text(aes(label = .group),
+            vjust = -0.7,
+            size  = 5) +
+  labs(
+    x = "Tratamientos (trt)",
+    y = "Media de longt_10",
+    fill  = "Tratamiento",
+    title = "Media de longitud del tallo por tratamiento"
+  ) +
+  theme_minimal() +
+  theme(text = element_text(size = 14))
+```
+

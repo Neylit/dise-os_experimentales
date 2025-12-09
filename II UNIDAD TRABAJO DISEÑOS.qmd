@@ -8,7 +8,7 @@ editor_options:
 
 # Diseño experimental
 
-$$\text{npg} = \mu + \text{bloque} + \text{trt} + e$$
+$$\Y_{ij} = \mu + \tau_i + \beta_j + e_ij$$
 
 # Cargar paquetes
 ```{r}
@@ -30,7 +30,7 @@ library(knitr)
 # Si tu hoja es pública, descomenta la siguiente línea:
 # gs4_deauth()
 
-url <- "https://docs.google.com/spreadsheets/d/1pjM8GMqfhJo9nVudwB1-m-Yz4_wFgYMz_o8wpjlM0f8/edit?gid=814885860#gid=814885860"
+url <- "https://docs.google.com/spreadsheets/d/1n4SCA3BXeg2cHXnnTk8fS_WuNxBEUWkI9xrJlEDgpDw/edit?gid=1676628291#gid=1676628291"
 gs  <- as_sheets_id(url)
 
 fb <- range_read(gs, "fb") |>

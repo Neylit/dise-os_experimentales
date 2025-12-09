@@ -1,0 +1,204 @@
+---
+title: "Germinación de semillas de lentejas"
+author: "Neylit"
+format: html
+editor_options:
+  chunk_output_type: console
+---
+
+## Diseño experimental
+
+$$\Y_{ij} = \mu + \tau_i + \beta_j + e_ij$$
+
+# Cargar paquetes
+```{r}
+library(tidyverse)
+library(googlesheets4)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(knitr)
+```
+
+
+#Base de datos
+>https://docs.google.com/spreadsheets/d/1_5Ue3HsDQekTM2Whni85ToqJvLOUefV1tcV1Xlso5CU/edit?gid=0#gid=0
+
+# Importar datos
+```{r}
+# Si tu hoja es pública, descomenta la siguiente línea:
+# gs4_deauth()
+
+url <- "https://docs.google.com/spreadsheets/d/1_5Ue3HsDQekTM2Whni85ToqJvLOUefV1tcV1Xlso5CU/edit?gid=0#gid=0"
+gs  <- as_sheets_id(url)
+
+fb <- range_read(gs, "fb") |>
+  mutate(across(c(trt, bloque), as.factor))
+
+str(fb)
+```
+
+# Análisis para longr_3
+
+# ANOVA (BCA)
+```{r}
+md <- aov(longr_3 ~ trt * sustrato, data = fb)
+anova(md)
+```
+
+# Comparación de medias (Tukey) con letras
+```{r}
+emm_int <- emmeans(md, ~ trt)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha   = 0.05
+) |>
+  as_tibble() |>
+  mutate(`.group` = stringr::str_trim(`.group`)) # limpia espacios
+
+kable(cld_int, caption = "longr_3 — Emmeans ± letras de Tukey (α = 0.05)")
+```
+
+# Tabla y gráfico final
+
+```{r}
+library(dplyr)
+
+df_mean2 <- fb %>%
+  group_by(trt, sustrato) %>%     
+  summarise(mean_longr3 = mean(longr_3, na.rm = TRUE), .groups = "drop")
+
+library(ggplot2)
+
+ggplot(df_mean2, aes(x = trt, y = mean_longr3, fill = sustrato)) +
+  geom_col(position = position_dodge()) +
+  labs(
+    x = "Tratamientos (trt)",
+    y = "Media de longr_3",
+    fill = "Sustrato",
+    title = "Media de longr_3 por tratamiento y sustrato"
+  ) +
+  theme_minimal() +
+  theme(text = element_text(size = 14))
+
+```
+```{r}
+library(ggplot2)
+
+ggplot(df_plot, aes(x = trt, y = mean_longr3, fill = sustrato)) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_text(
+    aes(label = groups),
+    position = position_dodge(width = 0.9),
+    vjust = -0.5,
+    size = 5
+  ) +
+  labs(
+    x = "Tratamiento",
+    y = "Media de longr_3",
+    fill = "Sustrato",
+    title = "Media de longr_3 por tratamiento y sustrato (con letras Tukey)"
+  ) +
+  theme_minimal()
+
+```
+
+##############
+```{r}
+library(dplyr)
+library(ggplot2)
+library(agricolae)
+
+# 1. Tabla de medias por tratamiento y sustrato
+df_mean2 <- fb %>%
+  group_by(trt, sustrato) %>%
+  summarise(mean_longr3 = mean(longr_3, na.rm = TRUE), .groups = "drop")
+
+# 2. ANOVA (solo por tratamiento, porque Tukey evalúa trt)
+modelo <- aov(longr_3 ~ trt, data = fb)
+
+# 3. Tukey para tratamiento
+tukey <- HSD.test(modelo, "trt", group = TRUE)
+
+# 4. Crear tabla de letras
+tabla_letras <- tukey$groups
+tabla_letras$trt <- rownames(tabla_letras)
+
+# Asegurar tipos de datos iguales
+tabla_letras$trt <- as.factor(tabla_letras$trt)
+df_mean2$trt <- as.factor(df_mean2$trt)
+
+# 5. Unir medias con letras de Tukey
+df_plot <- merge(df_mean2, tabla_letras, by = "trt")
+
+# 6. Gráfico final con barras + letras ANOVA
+ggplot(df_plot, aes(x = trt, y = mean_longr3, fill = sustrato)) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_text(
+    aes(label = groups),
+    position = position_dodge(width = 0.9),
+    vjust = -0.5,
+    size = 5
+  ) +
+  labs(
+    x = "Tratamientos (trt)",
+    y = "Media de longr_3",
+    fill = "Sustrato",
+    title = "Media de longr_3 por tratamiento y sustrato\nCon letras de significancia (Tukey HSD)"
+  ) +
+  theme_minimal() +
+  theme(text = element_text(size = 14))
+
+```
+
+##########
+# Análisis para longt_10
+
+# ANOVA (BCA)
+```{r}
+md <- aov(longr_10 ~ trt * sustrato, data = fb)
+anova(md)
+```
+
+# Comparación de medias (Tukey) con letras
+```{r}
+emm_int <- emmeans(md, ~ trt)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha   = 0.05
+) |>
+  as_tibble() |>
+  mutate(`.group` = stringr::str_trim(`.group`)) # limpia espacios
+
+kable(cld_int, caption = "longt_10 — Emmeans ± letras de Tukey (α = 0.05)")
+```
+
+# Tabla y gráfico final
+
+```{r}
+library(dplyr)
+
+df_mean2 <- fb %>%
+  group_by(trt, sustrato) %>%     
+  summarise(mean_longr3 = mean(longr_3, na.rm = TRUE), .groups = "drop")
+
+library(ggplot2)
+
+ggplot(df_mean2, aes(x = trt, y = mean_longr3, fill = sustrato)) +
+  geom_col(position = position_dodge()) +
+  labs(
+    x = "Tratamientos (trt)",
+    y = "Longitud (cm)",
+    fill = "Sustrato",
+    title = "Media de longt_10 por tratamiento y sustrato"
+  ) +
+  theme_minimal() +
+  theme(text = element_text(size = 14))
+
+```

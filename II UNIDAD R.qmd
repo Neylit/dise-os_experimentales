@@ -1,0 +1,218 @@
+---
+title: "Efecto de tres bioestimulantes en el rendimiento de arroz soca (oryza sativa l.) en secano favorecido en el Fundo Agricola I de la UNAS – Tingo María"
+title: "arroz"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+# Cargar paquetes
+```{r}
+library(tidyverse)
+library(googlesheets4)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+gs4_deauth()
+```
+
+# Importar datos
+
+```{r}
+url <- "https://docs.google.com/spreadsheets/d/1pjM8GMqfhJo9nVudwB1-m-Yz4_wFgYMz_o8wpjlM0f8/edit?gid=814885860#gid=814885860"
+gs <- url %>% as_sheets_id()
+
+fb <- gs %>% range_read("fb") %>% 
+  mutate(across(1: bloque, ~ as.factor(.)))
+
+str(fb)
+```
+
+# ANOVA
+$$Y_{ij} = \mu + \tau_i +\beta_j + \varepsilon_{ij}$$
+## Analisis para NMG
+
+# ANOVA
+```{r}
+md <- aov(nmg ~ trt + producto + dosis + producto * dosis, data = fb)
+
+anova(md)
+```
+
+# Comparación de medias
+```{r}
+emm_int <- emmeans(md, ~ producto * dosis)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha = 0.05
+) %>%
+  as_tibble() %>%
+  mutate(
+    .group = stringr::str_trim(.group)   # limpia espacios en las letras
+  )
+
+cld_int %>% kable()
+
+```
+
+## grafico
+
+```{r}
+library(ggplot2)
+
+ggplot(cld_int, aes(x = producto, y = emmean, fill = dosis)) +
+  geom_col(position = position_dodge(width = 0.8)) +
+  geom_errorbar(
+    aes(ymin = lower.CL, ymax = upper.CL),
+    position = position_dodge(width = 0.8),
+    width = 0.2
+  ) +
+  geom_text(
+    aes(label = .group, y = upper.CL + 0.05 * max(upper.CL)),  # Etiquetas ligeramente arriba del error
+    position = position_dodge(width = 0.8),
+    vjust = -0.5,
+    size = 4
+  ) +
+  labs(
+    x = "Producto",
+    y = "Media marginal (± IC95%)",
+    fill = "Dosis",
+    title = "Prueba de Tukey 
+    para numero de macollos por golpe "
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    legend.position = "top",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+```
+
+
+## Analisis para NPG
+
+# ANOVA
+```{r}
+md <- aov(npg ~ trt + producto + dosis + producto * dosis, data = fb)
+
+anova(md)
+```
+
+# Comparación de medias
+```{r}
+emm_int <- emmeans(md, ~ producto * dosis)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha = 0.05
+) %>%
+  as_tibble() %>%
+  mutate(
+    .group = stringr::str_trim(.group)   # limpia espacios en las letras
+  )
+
+cld_int %>% kable()
+
+```
+
+## grafico
+
+```{r}
+library(ggplot2)
+
+ggplot(cld_int, aes(x = producto, y = emmean, fill = dosis)) +
+  geom_col(position = position_dodge(width = 0.8)) +
+  geom_errorbar(
+    aes(ymin = lower.CL, ymax = upper.CL),
+    position = position_dodge(width = 0.8),
+    width = 0.2
+  ) +
+  geom_text(
+    aes(label = .group, y = upper.CL + 0.05 * max(upper.CL)),  # Etiquetas ligeramente arriba del error
+    position = position_dodge(width = 0.8),
+    vjust = -0.5,
+    size = 4
+  ) +
+  labs(
+    x = "Producto",
+    y = "Media marginal (± IC95%)",
+    fill = "Dosis",
+    title = "Prueba de Tukey 
+    para número de panoja por golpe"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    legend.position = "top",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+```
+
+## Analisis para TP
+
+# ANOVA
+```{r}
+md <- aov(tp ~ trt + producto + dosis + producto * dosis, data = fb)
+
+anova(md)
+```
+
+# Comparación de medias
+```{r}
+emm_int <- emmeans(md, ~ producto * dosis)
+
+cld_int <- cld(
+  emm_int,
+  adjust = "tukey",
+  Letters = letters,
+  alpha = 0.05
+) %>%
+  as_tibble() %>%
+  mutate(
+    .group = stringr::str_trim(.group)   # limpia espacios en las letras
+  )
+
+cld_int %>% kable()
+
+```
+
+## grafico
+
+```{r}
+library(ggplot2)
+
+ggplot(cld_int, aes(x = producto, y = emmean, fill = dosis)) +
+  geom_col(position = position_dodge(width = 0.8)) +
+  geom_errorbar(
+    aes(ymin = lower.CL, ymax = upper.CL),
+    position = position_dodge(width = 0.8),
+    width = 0.2
+  ) +
+  geom_text(
+    aes(label = .group, y = upper.CL + 0.05 * max(upper.CL)),  # Etiquetas ligeramente arriba del error
+    position = position_dodge(width = 0.8),
+    vjust = -0.5,
+    size = 4
+  ) +
+  labs(
+    x = "Producto",
+    y = "Media marginal (± IC95%)",
+    fill = "Dosis",
+    title = "Prueba de Tukey 
+    para tamaño de la panoja"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    legend.position = "top",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+```
